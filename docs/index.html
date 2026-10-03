@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.github.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; form-action 'none'; base-uri 'self'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Not Simülatörleri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,650&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <nav aria-label="Sayfalar">
+      <a href="index.html" aria-current="page">Giriş</a>
+      <a href="a-terminale.html">Öğrenci A — Terminale</a>
+      <a href="b-seconde.html">Öğrenci B — Seconde</a>
+    </nav>
+    <button type="button" class="btn small" id="theme">Tema</button>
+  </div>
+
+  <header>
+    <div class="eyebrow">Lycée · 2026-27</div>
+    <h1>Not Simülatörleri</h1>
+    <p class="lead">İki öğrenci için bac ve dönem ortalaması simülatörü: hangi derste kaç puan, genel ortalamayı ve mention'ı nasıl değiştirir? Notlar bu sitede durmaz; kilitli bir GitHub reposundan salt-okunur token ile okunur.</p>
+  </header>
+
+  <section class="status" id="status" aria-label="Veri durumu"></section>
+
+  <section class="sheet setup" id="kurulum" aria-labelledby="setup-h">
+    <h2 id="setup-h">Kurulum — salt-okunur token</h2>
+    <p class="sub mt" id="setup-state"></p>
+    <form id="setup-form" class="mt" autocomplete="off">
+      <div class="field">
+        <label for="token">Fine-grained personal access token</label>
+        <input type="password" id="token" name="token" autocomplete="off" spellcheck="false" placeholder="github_pat_…" aria-describedby="token-help">
+        <span class="sub" id="token-help">Token yalnız bu tarayıcıda saklanır; hiçbir sunucuya, URL'ye veya kayda yazılmaz.</span>
+      </div>
+      <label class="check"><input type="checkbox" id="remember" checked><span>Bu cihazda hatırla (kapalıysa yalnız bu sekme açıkken geçerli)</span></label>
+      <div class="actions">
+        <button type="submit" class="btn primary" id="connect">Bağlan ve test et</button>
+        <button type="button" class="btn danger" id="logout">Bu cihazdan çık</button>
+      </div>
+      <div class="msg hidden" id="setup-msg" role="status" aria-live="polite"></div>
+    </form>
+    <details class="mt">
+      <summary>Token nasıl oluşturulur?</summary>
+      <ol class="steps">
+        <li>GitHub → Settings → Developer settings → Personal access tokens → <strong>Fine-grained tokens</strong> → Generate new token.</li>
+        <li>Resource owner: hesabınız. Repository access: <strong>Only select repositories</strong> → yalnız <code id="repo-name">veri reposu</code>.</li>
+        <li>Permissions → Repository permissions → <strong>Contents: Read-only</strong>. Başka hiçbir yetki vermeyin.</li>
+        <li>Expiration: <strong>90 gün</strong>. Süre dolunca site "token geçersiz" der; aynı adımlarla yenisini üretin.</li>
+        <li>Token'ı yukarıdaki alana yapıştırın ve "Bağlan ve test et" deyin.</li>
+      </ol>
+    </details>
+  </section>
+
+  <section class="two" aria-label="Simülatörler">
+    <a class="sheet" href="a-terminale.html" id="link-a">
+      <div class="eyebrow">Öğrenci A</div>
+      <h2>Terminale — Bac 2027</h2>
+      <p class="sub mt">Kilitli 1ère notları + Terminale senaryoları; mention eşikleri, "emek nereye", "eşiğe ne lazım".</p>
+    </a>
+    <a class="sheet" href="b-seconde.html" id="link-b">
+      <div class="eyebrow">Öğrenci B</div>
+      <h2>Seconde — 2026-27</h2>
+      <p class="sub mt">Trimestre ortalaması ve bac 2029 için spécialité keşif aracı.</p>
+    </a>
+  </section>
+
+  <section class="notes" aria-label="Gizlilik">
+    <h2>Gizlilik</h2>
+    <ul>
+      <li>Bu site herkese açık bir GitHub Pages sitesidir; içinde hiçbir gerçek not, ad veya okul bilgisi yoktur. Token yokken uydurma <strong>örnek veri</strong> gösterir.</li>
+      <li>Gerçek notlar ayrı, kilitli bir repoda durur. Site onları yalnız okur; kodda yazma çağrısı yoktur ve bu CI'da denetlenir.</li>
+      <li>Token tarayıcınızın yerel deposunda kalır. Aynı GitHub hesabının diğer Pages siteleri aynı origin'i paylaştığı için token'a erişebilir; bu yüzden token salt-okunur, tek repoya kısıtlı ve 90 günlüktür.</li>
+      <li>Ekrandaki "Özel" senaryo ve geçici notlar sekme kapanınca silinir; hiçbir yere yazılmaz.</li>
+    </ul>
+  </section>
+</div>
+<script type="module" src="index.js"></script>
+</body>
+</html>
