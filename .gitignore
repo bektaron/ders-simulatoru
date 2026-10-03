@@ -1,0 +1,9 @@
+# Kişisel veri asla repoya girmez
+data/*.local.json
+*.local.*
+.privacy-terms.local
+
+# Araç çıktıları
+node_modules/
+.DS_Store
+*.log
