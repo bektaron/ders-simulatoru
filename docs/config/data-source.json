@@ -1,0 +1,7 @@
+{
+  "_comment": "Private veri reposu. Site buradan yalnız OKUR (GitHub REST API, salt-okunur fine-grained token).",
+  "owner": "bektaron",
+  "repo": "ders-simulatoru-veri",
+  "branch": "main",
+  "files": { "A": "a.json", "B": "b.json" }
+}
