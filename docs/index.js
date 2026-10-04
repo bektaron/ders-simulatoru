@@ -16,14 +16,15 @@ function showMsg(text, kind = '') {
 function tokenStateText(client) {
   return client.hasToken()
     ? 'Bu tarayıcıda bir token kayıtlı. Yenisini girerseniz eskisinin yerine geçer.'
-    : 'Henüz token yok: sayfalar örnek veriyle açılır.';
+    : 'Henüz token yok: yerel data/ dosyası da yoksa sayfalar örnek veriyle açılır.';
 }
 
 function statusCard(result, page, label) {
   const mode = result ? result.mode : Mode.ERROR;
-  const tone = mode === Mode.LIVE && !result.stale ? 'good' : mode === Mode.DEMO || (result && result.stale) || mode === Mode.CACHED ? 'warn' : mode === Mode.LIVE ? 'good' : 'bad';
+  const okMode = mode === Mode.LIVE || mode === Mode.LOCAL;
+  const tone = okMode && !(result && result.stale) ? 'good' : mode === Mode.DEMO || (result && result.stale) || mode === Mode.CACHED ? 'warn' : 'bad';
   const modeText = {
-    [Mode.DEMO]: 'Örnek veri', [Mode.LIVE]: result && result.stale ? 'Güncel değil (7+ gün)' : 'Güncel', [Mode.CACHED]: 'Çevrimdışı önbellek',
+    [Mode.DEMO]: 'Örnek veri', [Mode.LOCAL]: result && result.stale ? 'Yerel dosya (7+ gün eski)' : 'Yerel dosya', [Mode.LIVE]: result && result.stale ? 'Güncel değil (7+ gün)' : 'Güncel', [Mode.CACHED]: 'Çevrimdışı önbellek',
     [Mode.AUTH_ERROR]: 'Token geçersiz', [Mode.FORBIDDEN]: 'Erişim reddedildi', [Mode.NOT_FOUND]: 'Dosya bulunamadı',
     [Mode.INVALID_DATA]: 'Dosya şemaya uymuyor', [Mode.ERROR]: 'Okunamadı', [Mode.SETUP]: 'Kurulum gerekli',
   }[mode] || mode;

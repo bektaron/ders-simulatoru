@@ -1,5 +1,7 @@
 # Kişisel veri asla repoya girmez
+data/*.json
 data/*.local.json
+docs/data/
 *.local.*
 .privacy-terms.local
 
@@ -7,3 +9,4 @@ data/*.local.json
 node_modules/
 .DS_Store
 *.log
+*.zip

@@ -5,7 +5,7 @@
  * Token hiçbir zaman URL'ye, konsola veya hata metnine yazılmaz: mesajlar
  * yalnız HTTP durum kodundan üretilir.
  *
- *   createDataClient({ fetch, storage, sessionStorage, now, source, demoBase, validateData })
+ *   createDataClient({ fetch, storage, sessionStorage, now, source, demoBase, localBase, validateData })
  *     .hasToken() .setToken(t, {remember}) .clearToken()
  *     .verifyToken(t, student) → { ok, mode, status, message, errors }
  *     .load(student)           → Result
@@ -16,6 +16,7 @@
  */
 
 export const Mode = Object.freeze({
+  LOCAL: 'local',             // proje içindeki data/a.json · data/b.json (yerel kullanım)
   SETUP: 'setup',             // token yok ve demo da yüklenemedi
   DEMO: 'demo',               // token yok → örnek veri
   LIVE: 'live',               // veri reposundan taze okuma (veya 304 → önbellek güncel)
@@ -87,7 +88,8 @@ export function classifyResponse(status, headers) {
 /** Kullanıcıya gösterilecek metin. Yalnız mod ve durum kodundan üretilir. */
 export function safeMessage(mode, { status, rateLimited, fromCache } = {}) {
   switch (mode) {
-    case Mode.DEMO: return 'ÖRNEK VERİ — token girilmediği için uydurma örnek notlar gösteriliyor.';
+    case Mode.LOCAL: return 'Yerel dosyadan okundu.';
+    case Mode.DEMO: return 'ÖRNEK VERİ — yerel veri dosyası ve token yok; uydurma örnek notlar gösteriliyor.';
     case Mode.LIVE: return 'Veri reposundan okundu.';
     case Mode.CACHED: return 'Çevrimdışı — önbellekteki son veri gösteriliyor.';
     case Mode.AUTH_ERROR: return 'Token geçersiz ya da süresi dolmuş. Yeni bir salt-okunur token oluşturup kurulum ekranından girin.';
@@ -131,6 +133,7 @@ export function createDataClient({
   now = () => Date.now(),
   source,
   demoBase = './examples/',
+  localBase = '../data/',
   validateData = () => [],
 } = {}) {
   if (typeof fetchFn !== 'function') throw new Error('fetch gerekli');
@@ -180,7 +183,7 @@ export function createDataClient({
   function result(student, mode, extra = {}) {
     const data = extra.data || null;
     const updatedAt = data && typeof data.updatedAt === 'string' ? data.updatedAt : null;
-    const liveish = mode === Mode.LIVE || mode === Mode.CACHED;
+    const liveish = mode === Mode.LIVE || mode === Mode.CACHED || mode === Mode.LOCAL;
     return {
       student,
       mode,
@@ -218,10 +221,27 @@ export function createDataClient({
     }
   }
 
-  /** Veriyi okur. Token yoksa demo; ağ yoksa önbellek. */
+  /**
+   * Yerel kullanım: proje kökündeki data/<a|b>.json varsa doğrudan okunur.
+   * Dosya yoksa (404) veya sunucu yoksa null döner ve akış devam eder.
+   */
+  async function loadLocal(student) {
+    if (!localBase) return null;
+    const file = `${localBase}${student.toLowerCase()}.json`;
+    let res;
+    try { res = await fetchFn(file, { method: 'GET', cache: 'no-store' }); } catch { return null; }
+    if (!res.ok) return null;
+    const parsed = await parseBody(res, student);
+    if (!parsed.data) return result(student, Mode.INVALID_DATA, { status: res.status, errors: parsed.errors, message: `Yerel dosya (${file}) şemaya uymuyor. Ayrıntılar aşağıda.` });
+    return result(student, Mode.LOCAL, { status: res.status, data: parsed.data, fetchedAt: now() });
+  }
+
+  /** Veriyi okur. Sıra: yerel dosya → token (veri reposu) → demo; ağ yoksa önbellek. */
   async function load(student) {
     const file = source.files[student];
     if (!file) throw new Error(`Bilinmeyen öğrenci: ${student}`);
+    const local = await loadLocal(student);
+    if (local) return local;
     const token = getToken();
     if (!token) return loadDemo(student);
 
@@ -289,5 +309,5 @@ export function createDataClient({
     return { ok: true, mode: Mode.LIVE, status: 200, message: 'Bağlantı başarılı.', errors: [], data: parsed.data };
   }
 
-  return { hasToken, setToken, clearToken, verifyToken, load, loadDemo, readCache, clearCache, logout };
+  return { hasToken, setToken, clearToken, verifyToken, load, loadDemo, loadLocal, readCache, clearCache, logout };
 }
