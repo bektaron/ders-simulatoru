@@ -5,7 +5,17 @@
 - **Öğrenci A — Terminale** (`docs/a-terminale.html`): bac 2027. Kilitli 1ère notları + Terminale senaryoları, 6–20 eşik göstergesi, "Emek nereye?", "Eşiğe ne lazım?", bu dönemin notları.
 - **Öğrenci B — Seconde** (`docs/b-seconde.html`): trimestre ortalaması (geçici "ya şu sınavdan X alırsa" notlarıyla) + bac 2029 projeksiyonu (üç spécialité, üç "bırakma" senaryosu yan yana).
 
-## Gizlilik modeli — iki repo
+## Yerel kullanım (varsayılan yol)
+
+1. Bu klasörde `npm run serve` (Python 3 gerekir; Windows'ta `python -m http.server 8080`). Alternatif: `npx http-server -p 8080`.
+2. Tarayıcıda `http://localhost:8080/` → `docs/`'a yönlenir.
+3. Gerçek notlar `data/a.json` ve `data/b.json` dosyalarına yazılır (şema aşağıda, kimlik tablosu aşağıda). Dosya varsa site onu okur ve üstte **"Yerel dosya · Son güncelleme"** bandı çıkar; yoksa örnek veriyle (ÖRNEK VERİ bandı) açılır.
+4. Dosyayı kaydetmeden önce doğrula: `npm run validate` (veya `node scripts/validate-data.mjs data/a.json`).
+5. `data/*.json` git dışıdır; `.gitignore` bunu zorlar. Sayfalar `file://` ile açılmaz, sunucu şart.
+
+Okuma sırası: **yerel dosya → GitHub veri reposu (token) → örnek veri**. Token ve GitHub Pages aşağıda anlatılır; yerel kullanımda gerekmez.
+
+## Gizlilik modeli — iki repo (isteğe bağlı web yayını)
 
 | Repo | Görünürlük | İçerik |
 |---|---|---|
@@ -21,7 +31,9 @@
 ## Yapı
 
 ```
-docs/                       GitHub Pages kaynağı (main → /docs)
+index.html                  → docs/ yönlendirmesi (yerel sunucu kökü)
+data/                       a.json · b.json — gerçek notlar, git dışı (yerel kullanım)
+docs/                       site (GitHub Pages kaynağı: main → /docs)
   index.html + index.js     giriş, durum kartları, token kurulumu
   a-terminale.html/.js      Öğrenci A
   b-seconde.html/.js        Öğrenci B (iki sekme)
@@ -33,15 +45,16 @@ docs/                       GitHub Pages kaynağı (main → /docs)
   schema/notes.schema.json  veri dosyası şeması (draft 2020-12)
   examples/                 a.example.json · b.example.json — UYDURMA, "example": true
 tests/                      engine.test.mjs · data.test.mjs (node --test)
-scripts/                    privacy-check.mjs · readonly-check.mjs
+scripts/                    privacy-check.mjs · readonly-check.mjs · validate-data.mjs
+CLAUDE.md                   diğer Claude (Cowork) için el kitabı
 .github/workflows/ci.yml    test + gizlilik grep'i + salt-okunur denetimi
 ```
 
 ## Çalıştırma
 
-- **Yayın:** repo Settings → Pages → *Deploy from a branch* → `main` / `/docs`.
-- **Yerel:** `npm run serve` (→ http://localhost:8080). Sayfalar ES module + `fetch` kullanır; `file://` ile açılmaz.
-- **Test ve denetimler:** `npm run check` (= `npm test` + gizlilik denetimi). Geçmiş dahil: `npm run privacy:history`. Salt-okunur denetimi: `node scripts/readonly-check.mjs`.
+- **Yerel:** `npm run serve` (→ http://localhost:8080/, `docs/`'a yönlenir). Sayfalar ES module + `fetch` kullanır; `file://` ile açılmaz.
+- **Yayın (isteğe bağlı):** repo Settings → Pages → *Deploy from a branch* → `main` / `/docs`. `data/` klasörü `docs/` dışında olduğu için yayına girmez.
+- **Test ve denetimler:** `npm run check` (= `npm test` + gizlilik denetimi). Geçmiş dahil: `npm run privacy:history`. Salt-okunur denetimi: `node scripts/readonly-check.mjs`. Veri dosyası: `npm run validate`.
 
 Gereksinim: Node ≥ 22. Bağımlılık yok.
 

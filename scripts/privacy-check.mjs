@@ -48,6 +48,10 @@ function loadTerms() {
   return [...new Set(out.map(normalize))].filter((t) => t.length >= 3);
 }
 const TERMS = loadTerms();
+const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/* Terim kelime başında aranır: "Ad", "Adın", "Ad'ın" yakalanır; "taşımalı" gibi
+   diakritik normalizasyonuyla ortaya çıkan iç eşleşmeler yakalanmaz. */
+const TERM_RES = TERMS.map((t) => new RegExp(`(^|[^a-z0-9])${esc(t)}`));
 if (TERMS.length === 0) warn('PRIVACY_TERMS tanımlı değil ve .privacy-terms.local yok — isim denetimi atlandı. CI için repo secret ekleyin.');
 
 /* --- genel desenler ------------------------------------------------ */
@@ -78,8 +82,8 @@ function scanText(text, where) {
   const lines = text.split('\n');
   lines.forEach((line, i) => {
     const norm = normalize(line);
-    TERMS.forEach((t, k) => {
-      if (norm.includes(t)) fail(`${where}:${i + 1} — yasaklı terim #${k + 1}`);
+    TERM_RES.forEach((re, k) => {
+      if (re.test(norm)) fail(`${where}:${i + 1} — yasaklı terim #${k + 1}`);
     });
     for (const g of GENERIC) {
       g.re.lastIndex = 0;
@@ -116,11 +120,14 @@ if (HISTORY) {
   const log = git('log --all -p --format=commit:%H');
   if (log) {
     let commit = '?';
+    let file = '';
     const lines = log.split('\n');
     lines.forEach((line, i) => {
-      if (line.startsWith('commit:')) { commit = line.slice(7, 19); return; }
+      if (line.startsWith('commit:')) { commit = line.slice(7, 19); file = ''; return; }
+      if (line.startsWith('diff --git ')) { file = line.replace(/^diff --git a\/.* b\//, ''); return; }
+      if (SKIP.has(file)) return; // denetim betiğinin kendi geçmişi taranmaz
       const norm = normalize(line);
-      TERMS.forEach((t, k) => { if (norm.includes(t)) fail(`geçmiş ${commit} (satır ${i + 1}) — yasaklı terim #${k + 1}`); });
+      TERM_RES.forEach((re, k) => { if (re.test(norm)) fail(`geçmiş ${commit} ${file} (satır ${i + 1}) — yasaklı terim #${k + 1}`); });
       for (const g of GENERIC) { g.re.lastIndex = 0; if (g.re.test(line)) fail(`geçmiş ${commit} (satır ${i + 1}) — ${g.name} deseni`); }
     });
   }

@@ -46,9 +46,9 @@ function fakeFetch(queue) {
 
 const validateData = (student, data) => validateNotes(data, student === 'A' ? cfgA : cfgB, schema).errors;
 
-function client(queue, { storage = memStorage(), session = memStorage(), token } = {}) {
+function client(queue, { storage = memStorage(), session = memStorage(), token, localBase = null } = {}) {
   const fetch = fakeFetch(queue);
-  const c = createDataClient({ fetch, storage, sessionStorage: session, now: () => NOW, source, validateData, demoBase: './examples/' });
+  const c = createDataClient({ fetch, storage, sessionStorage: session, now: () => NOW, source, validateData, demoBase: './examples/', localBase });
   if (token) c.setToken(token);
   return { c, fetch, storage, session };
 }
@@ -103,6 +103,31 @@ test('saf yardımcılar: token biçimi, isStale, classifyResponse, buildRequest'
   assert.equal(init.headers.Authorization, `Bearer ${TOKEN}`);
   assert.equal(init.headers['If-None-Match'], 'W/"abc"');
   assert.ok(!url.includes(TOKEN));
+});
+
+test('yerel veri modu: data/a.json varsa LOCAL, 404 ise akış devam eder, bozuksa INVALID_DATA', async () => {
+  const { c, fetch } = client([{ status: 200, body: { ...exA, updatedAt: '2026-10-03T09:00:00+03:00' } }], { localBase: '../data/' });
+  const r = await c.load('A');
+  assert.equal(r.mode, Mode.LOCAL);
+  assert.equal(fetch.calls[0].url, '../data/a.json');
+  assert.equal(r.stale, false);
+  assert.equal(r.data.student, 'A');
+  // 404 → token yok → DEMO
+  const { c: c2, fetch: f2 } = client([{ status: 404 }, { status: 200, body: exA }], { localBase: '../data/' });
+  assert.equal((await c2.load('A')).mode, Mode.DEMO);
+  assert.equal(f2.calls[1].url, './examples/a.example.json');
+  // 404 → token var → API
+  const { c: c3, fetch: f3 } = client([{ status: 404 }, { status: 200, body: exA }], { localBase: '../data/', token: TOKEN });
+  assert.equal((await c3.load('A')).mode, Mode.LIVE);
+  assert.ok(f3.calls[1].url.startsWith('https://api.github.com/'));
+  // sunucu yok (TypeError) → DEMO
+  const { c: c4 } = client([{ throw: true }, { status: 200, body: exA }], { localBase: '../data/' });
+  assert.equal((await c4.load('A')).mode, Mode.DEMO);
+  // bozuk yerel dosya → INVALID_DATA, akış durur
+  const { c: c5 } = client([{ status: 200, body: { hello: 1 } }], { localBase: '../data/' });
+  const bad = await c5.load('A');
+  assert.equal(bad.mode, Mode.INVALID_DATA);
+  assert.ok(bad.errors.length > 0);
 });
 
 test('token yok → DEMO: örnek dosya istenir, önbellek yazılmaz', async () => {

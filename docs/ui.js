@@ -133,6 +133,7 @@ export async function boot({ student, configs = {}, validateWith }) {
     sessionStorage: globalThis.sessionStorage,
     source,
     demoBase: 'examples/',
+    localBase: '../data/',
     validateData,
   });
   const result = student ? await client.load(student) : null;
@@ -153,6 +154,7 @@ export function renderBanner(container, result, { setupHref = 'index.html#kurulu
   let text = result.message;
   const extra = [];
   if (mode === Mode.DEMO) { cls += ' demo'; label = 'Örnek veri'; }
+  else if (mode === Mode.LOCAL) { cls += result.stale ? ' stale' : ' live'; label = result.stale ? 'Yerel dosya · eski' : 'Yerel dosya'; text = result.stale ? 'Veri 7 günden eski.' : ''; }
   else if (mode === Mode.LIVE) { cls += result.stale ? ' stale' : ' live'; label = result.stale ? 'Eski veri' : 'Güncel'; text = result.stale ? 'Veri 7 günden eski.' : ''; }
   else if (mode === Mode.CACHED) { cls += ' cached'; label = 'Çevrimdışı'; text = `Son başarılı okuma: ${fmtDateTime(new Date(result.fetchedAt).toISOString())}.`; }
   else { cls += ' error'; label = 'Sorun'; }
